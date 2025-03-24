@@ -30,7 +30,6 @@ class CategoriaController extends Controller
         try{
             $categorias = Categoria::all();
             return response()->json(["categorias"=>$categorias]);
-
         }
         catch(Exception $e){
             return response()->json(["Message" => "Algo a malido sal ","Debug"=>$e->getMessage()]);
