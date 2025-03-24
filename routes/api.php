@@ -33,7 +33,7 @@ Route::controller(PeticioneController::class)->group(function () {
     Route::get('peticiones', 'index');
     Route::get('peticiones/firmadas', 'listarFirmadas');
     Route::get('peticiones/list', 'list');
-    Route::get('peticiones/{id}', 'listMine');
+    Route::get('peticiones/listMine', 'listMine');
     Route::get('peticiones/show/{id}', 'show');
     Route::put('peticiones/{id}', 'update');
     Route::post('peticiones/store', 'store');
@@ -45,6 +45,7 @@ Route::controller(PeticioneController::class)->group(function () {
 Route::controller(CategoriaController::class)->group(function () {
     Route::post('categorias', 'store');
     Route::get('categorias/show/{id}', 'show')->middleware('auth:api');
+    Route::get("categorias" ,"list");
 });
 
 Route::controller(AuthController::class)->group(function () {

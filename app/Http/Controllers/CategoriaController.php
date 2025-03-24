@@ -26,4 +26,15 @@ class CategoriaController extends Controller
             return response()->json('Error buscando la categoría',404 );
         }
     }
+    public function list(){
+        try{
+            $categorias = Categoria::all();
+            return response()->json(["categorias"=>$categorias]);
+
+        }
+        catch(Exception $e){
+            return response()->json(["Message" => "Algo a malido sal ","Debug"=>$e->getMessage()]);
+        }
+
+    }
 }
