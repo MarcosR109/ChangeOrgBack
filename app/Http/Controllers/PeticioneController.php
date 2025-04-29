@@ -45,9 +45,9 @@ class PeticioneController extends Controller
     public function index(Request $request)
     {
         try {
-            $peticiones = Peticione::with('file')->paginate(1);
-        } catch (Exception) {
-            return response()->json(['Error' => 'Error buscando las peticiones']);
+            $peticiones = Peticione::with('files')->paginate(7);
+        } catch (Exception $e) {
+            return response()->json(['Error' => 'Error buscando las peticiones', 'Debug' => $e->getMessage()], 404);
         }
         return response()->json(['Message' => 'Peticiones encontradas:', 'Data' => $peticiones]);
     }
@@ -131,13 +131,13 @@ class PeticioneController extends Controller
                 if ($res_file) {
                     $peticion->file = $res_file;
                     return response()->json(
-                        ['message' => 'Petición creada', 'data' => $peticion, "file" => $res_file],
+                        ['message' => 'Petición creada', 'data' => $peticion,],
                     );
                 }
             }
         } catch (Exception $e) {
             return response()->json(
-                ['error' => 'Error creando la petición', 'data' => $e->getMessage()],
+                ['error' => 'Error creando la petición', 'data' => $e->getMessage(), $e->getLine()],
             );
         }
         return response()->json(
@@ -148,27 +148,28 @@ class PeticioneController extends Controller
     public
     function fileUpload(Request $req, $peticione_id = null)
     {
-        $file = $req->file('foto');
-        $fileModel = new File;
-        $fileModel->peticione_id = $peticione_id;
-        if ($req->file('foto')) {
-            $filename = $fileName = time() . '_' . $file->getClientOriginalName();
-            try {
-                $file->move(public_path('images/peticiones/'), $filename);
-            } catch (Exception $e) {
-                return response()->json(['error' => $e->getMessage()]);
-            }
-            $fileModel->name = $filename;
-            $fileModel->file_path = $filename;
-            $res = $fileModel->save();
-            return $fileModel;
-            if ($res) {
-                return 0;
-            } else {
-                return 1;
+        $input = $req->all();
+        $files = $input['foto']; // Puede ser un array de archivos
+        foreach ($files as $file) {
+            if ($file->isValid()) {
+                $fileModel = new File;
+                $fileModel->peticione_id = $peticione_id;
+
+                $filename = time() . '_' . $file->getClientOriginalName();
+                try {
+                    $file->move(public_path('images/peticiones/'), $filename);
+                } catch (Exception $e) {
+                    return response()->json(['error' => $e->getMessage()], 500);
+                }
+
+                $fileModel->name = $filename;
+                $fileModel->file_path = $filename;
+                $fileModel->save();
+
+                $savedFiles[] = $fileModel;
             }
         }
-        return 1;
+        return $savedFiles;
     }
 
     function list(Request $request)
