@@ -45,7 +45,7 @@ class PeticioneController extends Controller
     public function index(Request $request)
     {
         try {
-            $peticiones = Peticione::with('file')->get();
+            $peticiones = Peticione::with('file')->paginate(1);
         } catch (Exception) {
             return response()->json(['Error' => 'Error buscando las peticiones']);
         }
@@ -56,9 +56,9 @@ class PeticioneController extends Controller
     {
         try {
             $id = auth()->id();
-            $peticiones = Peticione::with('file')->get()->where('user_id', '=',$id);
+            $peticiones = Peticione::with('file')->get()->where('user_id', '=', $id);
         } catch (Exception $e) {
-            return response()->json(['Error' => 'Error buscando usuario','Debug'=>$e->getMessage()], 404);
+            return response()->json(['Error' => 'Error buscando usuario', 'Debug' => $e->getMessage()], 404);
         }
         return response()->json(['Message' => 'Peticiones encontradas en función listMine:', 'Data' => $peticiones]);
     }
@@ -66,7 +66,9 @@ class PeticioneController extends Controller
     public function listarFirmadas()
     {
         try {
-            $peticiones = Peticione::where("firmantes", '>', "0")->get();
+            $peticiones = Peticione::with('file')->whereHas('firmas', function ($query) {
+                $query->where('user_id', auth()->id());
+            })->get();
         } catch (Exception) {
             return response()->json(['Error' => 'Error buscando peticiones'], 404);
         }
@@ -78,7 +80,7 @@ class PeticioneController extends Controller
     public function show($id)
     {
         try {
-            $peticion = Peticione::query()->findOrFail($id);
+            $peticion = Peticione::with('file')->findOrFail($id);
         } catch (Exception) {
             return response()->json(['Message' => 'Ha ocurrido un error']);
         }
@@ -95,13 +97,13 @@ class PeticioneController extends Controller
             if ($peticion) {
                 $input = $request->all();
                 $peticion->update($input);
-               // $peticion->save();
+                // $peticion->save();
             }
         } catch (Exception $e) {
             return response()->json(['Error' => 'Error actualizando la petición', $e->getmessage()], 500);
         }
         //dd($request);
-        return response()->json(["Message" => 'Petición actualizada', 'Datos' => $peticion,'Debug' => $input], 200);
+        return response()->json(["Message" => 'Petición actualizada', 'Datos' => $peticion, 'Debug' => $input], 200);
     }
 
     public
