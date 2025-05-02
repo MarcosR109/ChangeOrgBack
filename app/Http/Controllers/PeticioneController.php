@@ -45,7 +45,7 @@ class PeticioneController extends Controller
     public function index(Request $request)
     {
         try {
-            $peticiones = Peticione::with('files')->paginate(7);
+            $peticiones = Peticione::with('files')->paginate(3);
         } catch (Exception $e) {
             return response()->json(['Error' => 'Error buscando las peticiones', 'Debug' => $e->getMessage()], 404);
         }
@@ -56,7 +56,7 @@ class PeticioneController extends Controller
     {
         try {
             $id = auth()->id();
-            $peticiones = Peticione::with('file')->get()->where('user_id', '=', $id);
+            $peticiones = Peticione::with('files')->get()->where('user_id', '=', $id);
         } catch (Exception $e) {
             return response()->json(['Error' => 'Error buscando usuario', 'Debug' => $e->getMessage()], 404);
         }
@@ -66,7 +66,7 @@ class PeticioneController extends Controller
     public function listarFirmadas()
     {
         try {
-            $peticiones = Peticione::with('file')->whereHas('firmas', function ($query) {
+            $peticiones = Peticione::with('files')->whereHas('firmas', function ($query) {
                 $query->where('user_id', auth()->id());
             })->get();
         } catch (Exception) {
@@ -80,9 +80,9 @@ class PeticioneController extends Controller
     public function show($id)
     {
         try {
-            $peticion = Peticione::with('file')->findOrFail($id);
-        } catch (Exception) {
-            return response()->json(['Message' => 'Ha ocurrido un error']);
+            $peticion = Peticione::with('files')->findOrFail($id);
+        } catch (Exception $e) {
+            return response()->json(['Message' => 'Ha ocurrido un error','debug' => $e->getMessage(),], 404);
         }
         return response()->json(['Message' => 'Petición encontrada:', 'Data' => $peticion]);
     }
