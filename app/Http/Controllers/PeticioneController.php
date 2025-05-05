@@ -82,7 +82,7 @@ class PeticioneController extends Controller
         try {
             $peticion = Peticione::with('files')->findOrFail($id);
         } catch (Exception $e) {
-            return response()->json(['Message' => 'Ha ocurrido un error','debug' => $e->getMessage(),], 404);
+            return response()->json(['Message' => 'Ha ocurrido un error', 'debug' => $e->getMessage(),], 404);
         }
         return response()->json(['Message' => 'Petición encontrada:', 'Data' => $peticion]);
     }
@@ -91,24 +91,39 @@ class PeticioneController extends Controller
     {
         try {
             $peticion = Peticione::findOrFail($id);
-            if ($request->user()->cannot('update', $peticion)) {
+            $user = auth()->user();
+            if ($user->cannot('update', $peticion)) {
                 return response()->json(['Error' => 'No estás autorizado para actualizar la petición.', 403]);
             }
             if ($peticion) {
                 $input = $request->all();
-                $peticion->update($input);
-                // $peticion->save();
+                $titulo = $request->input('titulo');
+                $peticion->titulo = $titulo;
+                $peticion->save();
+
+                if ($input['foto']) {
+                    $res_file = $this->fileUpload($request, $peticion->id);
+                    if ($res_file) {
+                        $peticion->file = $res_file;
+                        $peticion->save();
+                        return response()->json(
+                            ['message' => 'Petición creada', 'data' => $peticion, 'files' => $peticion->files],
+                        );
+                    }
+                }
+
             }
         } catch (Exception $e) {
-            return response()->json(['Error' => 'Error actualizando la petición', $e->getmessage()], 500);
+            return response()->json(['Error' => 'Error actualizando la petición', 'MESSAGE' => $e->getmessage(), 'DEBUG' => $request, "Input" => $request->all()], 500);
         }
         //dd($request);
         return response()->json(["Message" => 'Petición actualizada', 'Datos' => $peticion, 'Debug' => $input], 200);
     }
 
     public
-    function store(Request $request)
-    {
+        function store(
+        Request $request
+    ) {
         $this->validate($request, [
             'titulo' => 'required|max:255',
             'descripcion' => 'required',
@@ -131,7 +146,7 @@ class PeticioneController extends Controller
                 if ($res_file) {
                     $peticion->file = $res_file;
                     return response()->json(
-                        ['message' => 'Petición creada', 'data' => $peticion,],
+                        ['message' => 'Petición creada', 'data' => $peticion, 'files' => $peticion->files],
                     );
                 }
             }
@@ -146,27 +161,32 @@ class PeticioneController extends Controller
     }
 
     public
-    function fileUpload(Request $req, $peticione_id = null)
-    {
+        function fileUpload(
+        Request $req,
+        $peticione_id = null
+    ) {
         $input = $req->all();
-        $files = $input['foto']; // Puede ser un array de archivos
+        $files = $input['foto'];
+        $savedFiles = [];
         foreach ($files as $file) {
-            if ($file->isValid()) {
-                $fileModel = new File;
-                $fileModel->peticione_id = $peticione_id;
+            foreach ($file as $f) {
+                $file = $f;
 
-                $filename = time() . '_' . $file->getClientOriginalName();
-                try {
-                    $file->move(public_path('images/peticiones/'), $filename);
-                } catch (Exception $e) {
-                    return response()->json(['error' => $e->getMessage()], 500);
+                if ($file->isValid()) {
+                    $fileModel = new File;
+                    $fileModel->peticione_id = $peticione_id;
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    try {
+                        $file->move(public_path('images/peticiones/'), $filename);
+                    } catch (Exception $e) {
+                        return response()->json(['error' => $e->getMessage()], 500);
+                    }
+
+                    $fileModel->name = $filename;
+                    $fileModel->file_path = $filename;
+                    $fileModel->save();
+                    $savedFiles[] = $fileModel;
                 }
-
-                $fileModel->name = $filename;
-                $fileModel->file_path = $filename;
-                $fileModel->save();
-
-                $savedFiles[] = $fileModel;
             }
         }
         return $savedFiles;
